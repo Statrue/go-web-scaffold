@@ -1,0 +1,29 @@
+app:
+  name: "web_app"
+  mode: "dev" # dev: dev or debug or test | prod: prod or release
+  port: 18081
+
+log:
+  level: "info"
+  rollingFile:
+    filename: "web_app.log"
+    maxSize: 200 # MB
+    maxAge: 30 # days
+    maxBackups: 8
+
+mysql:
+  host: "127.0.0.1"
+  port: 3306
+  user: "root"
+  password: "root"
+  schema: "sql_test" # or dbname
+  params: charset=utf8mb4&loc=Asia%2FShanghai
+  maxConn: 8
+  maxIdle: 4
+
+redis:
+  host: 127.0.0.1
+  port: 6379
+  db: 0
+  poolSize: 100
+  # password: "password"
