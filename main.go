@@ -27,7 +27,7 @@ func main() {
 	}
 
 	// 2. Initialize logger
-	if err := logger.Init(); err != nil {
+	if err := logger.Init(settings.Conf.LoggerConfig); err != nil {
 		fmt.Printf("Init logger failed, err: %v\n", err)
 		return
 	}
@@ -35,7 +35,7 @@ func main() {
 	zap.L().Debug("Logger init succeeded.")
 
 	// 3. Initialize MySQL connection
-	if err := mysql.Init(); err != nil {
+	if err := mysql.Init(settings.Conf.MySQLConfig); err != nil {
 		zap.L().Error("Connect DB failed", zap.Error(err))
 		return
 	}
@@ -43,15 +43,15 @@ func main() {
 	zap.L().Debug("MySQL init succeeded.")
 
 	// 4. Initialize Redis connection
-	if err := redis.Init(); err != nil {
+	if err := redis.Init(settings.Conf.RedisConfig); err != nil {
 		zap.L().Error("Connect redis failed", zap.Error(err))
 		return
 	}
 	defer redis.Close()
 	zap.L().Debug("Redis init succeeded.")
 
-	// 5. Register route
-	router := routes.Setup()
+	// 5. Register routes
+	router := routes.Setup(settings.Conf.Mode)
 
 	// 6. Initiate service (and graceful shutdown)
 	server := http.Server{

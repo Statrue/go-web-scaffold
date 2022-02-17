@@ -6,24 +6,25 @@ import (
 	"github.com/spf13/viper"
 )
 
-var Config GlobalConfig
+var Conf = new(GlobalConfig)
 
 type GlobalConfig struct {
-	AppConfig    `mapstructure:"app"`
-	LoggerConfig `mapstructure:"log"`
-	MySQLConfig  `mapstructure:"mysql"`
-	RedisConfig  `mapstructure:"redis"`
+	*AppConfig    `mapstructure:"app"`
+	*LoggerConfig `mapstructure:"log"`
+	*MySQLConfig  `mapstructure:"mysql"`
+	*RedisConfig  `mapstructure:"redis"`
 }
 
 type AppConfig struct {
-	Name string
-	Mode string
-	Port int
+	Name    string
+	Mode    string
+	Version string
+	Port    int
 }
 
 type LoggerConfig struct {
-	Level             string
-	RollingFileConfig `mapstructure:"rollingFile"`
+	Level              string
+	*RollingFileConfig `mapstructure:"rollingFile"`
 }
 
 type RollingFileConfig struct {
@@ -35,7 +36,7 @@ type RollingFileConfig struct {
 
 type MySQLConfig struct {
 	Host             string
-	Port             string
+	Port             int
 	User             string
 	Password         string
 	Schema           string
@@ -44,15 +45,16 @@ type MySQLConfig struct {
 }
 
 type RedisConfig struct {
-	Host string
-	Port int
-	DB   int
+	Host     string
+	Port     int
+	DB       int `mapstructure:"db"`
+	PoolSize int
+	Password string
 }
 
 func Init() (err error) {
-	// Specify conf file's name and type. (or use SetConfigFile() for briefness)
-	viper.SetConfigName("config")
-	viper.SetConfigType("yaml")
+	// Specify conf file
+	viper.SetConfigFile("config.yaml")
 	viper.AddConfigPath("./conf/")
 
 	if err = viper.ReadInConfig(); err != nil {
@@ -62,10 +64,13 @@ func Init() (err error) {
 	// Hot-loading
 	viper.OnConfigChange(func(in fsnotify.Event) {
 		fmt.Println("Config file modified.")
+		if err = viper.Unmarshal(Conf); err != nil {
+			return
+		}
 	})
 	viper.WatchConfig()
 
-	if err = viper.Unmarshal(&Config); err != nil {
+	if err = viper.Unmarshal(Conf); err != nil {
 		return
 	}
 

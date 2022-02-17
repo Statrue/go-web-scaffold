@@ -2,7 +2,6 @@ package logger
 
 import (
 	"fmt"
-	"github.com/spf13/viper"
 	"go-web-scaffold/settings"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
@@ -10,13 +9,14 @@ import (
 	"os"
 )
 
-func Init() (err error) {
-	writeSyncer := getLogWriter()
+func Init(cfg *settings.LoggerConfig) (err error) {
+	mode := settings.Conf.Mode
+	writeSyncer := getLogWriter(cfg, mode)
 
-	encoder := getEncoder()
+	encoder := getEncoder(mode)
 
 	l := new(zapcore.Level)
-	err = l.UnmarshalText([]byte(settings.Config.Level))
+	err = l.UnmarshalText([]byte(cfg.Level))
 	if err != nil {
 		return
 	}
@@ -25,7 +25,6 @@ func Init() (err error) {
 
 	logger := zap.New(core, zap.WithCaller(true))
 
-	mode := viper.GetString("app.mode")
 	if mode == "dev" || mode == "debug" || mode == "test" {
 		logger.WithOptions(zap.Development())
 	}
@@ -36,7 +35,7 @@ func Init() (err error) {
 }
 
 func Sync() {
-	mode := viper.GetString("app.mode")
+	mode := settings.Conf.Mode
 	if mode == "dev" || mode == "debug" || mode == "test" {
 		return
 	}
@@ -45,10 +44,10 @@ func Sync() {
 	}
 }
 
-func getLogWriter() zapcore.WriteSyncer {
-	switch viper.GetString("app.mode") {
+func getLogWriter(cfg *settings.LoggerConfig, mode string) zapcore.WriteSyncer {
+	switch mode {
 	case "prod", "release":
-		return zapcore.AddSync(getRollingFileLogger())
+		return zapcore.AddSync(getRollingFileLogger(cfg))
 	case "dev", "debug", "test":
 		fallthrough
 	default:
@@ -56,18 +55,17 @@ func getLogWriter() zapcore.WriteSyncer {
 	}
 }
 
-func getRollingFileLogger() *lumberjack.Logger {
+func getRollingFileLogger(cfg *settings.LoggerConfig) *lumberjack.Logger {
 	return &lumberjack.Logger{
-		Filename:   viper.GetString("log.rollingFile.filename"),
-		MaxSize:    viper.GetInt("log.rollingFile.maxSize"),
-		MaxBackups: viper.GetInt("log.rollingFile.maxBackups"),
-		MaxAge:     viper.GetInt("log.rollingFile.maxAge"),
+		Filename:   cfg.RollingFileConfig.Filename,
+		MaxSize:    cfg.RollingFileConfig.MaxSize,
+		MaxBackups: cfg.RollingFileConfig.MaxBackups,
+		MaxAge:     cfg.RollingFileConfig.MaxAge,
 	}
 }
 
-func getEncoder() zapcore.Encoder {
+func getEncoder(mode string) zapcore.Encoder {
 	var encoderConfig zapcore.EncoderConfig
-	mode := viper.GetString("app.mode")
 	switch mode {
 	case "prod", "release":
 		encoderConfig = zap.NewProductionEncoderConfig()
